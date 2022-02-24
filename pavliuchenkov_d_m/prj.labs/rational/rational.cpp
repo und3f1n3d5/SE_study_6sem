@@ -125,7 +125,7 @@ std::istream& operator >> (std::istream &in, Rational &a)
     for (i = i + (s[i] == '-'); i < s.size(); ++i){
         q = q*10 + (int) s[i] - '0';
     }
-    if (s[j] == '-') p = -p;
+    if (s[j] == '-')    throw std::runtime_error("Error in input format.\n");
     a = Rational(p, q);
     return in;
 }
