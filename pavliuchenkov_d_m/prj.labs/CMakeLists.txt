@@ -1,5 +1,5 @@
 add_subdirectory(list)
 add_subdirectory(rational)
-add_subdirectory(mi3)
+add_subdirectory(m3i)
 add_subdirectory(mm)
 
