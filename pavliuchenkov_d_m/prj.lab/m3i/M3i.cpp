@@ -17,9 +17,6 @@ M3i::M3i(const uint64_t w, const uint64_t h, const uint64_t d, int64_t *data)
 }
 
 M3i::M3i(const M3i &right) {
-    if (this->data_ == right.data_) {
-        throw std::runtime_error("Error while copying: same pointers\n");
-    }
     ConstructFromPointer(right.data_, width_, height_, depth_);
     width_ = right.width_;
     height_ = right.height_;
@@ -37,6 +34,8 @@ M3i &M3i::operator=(const M3i &right) {
     width_ = right.width_;
     height_ = right.height_;
     depth_ = right.depth_;
+    number_of_copies_ = right.number_of_copies_;
+    is_copy_ = right.is_copy_;
     return *this;
 }
 
@@ -79,7 +78,12 @@ void M3i::Resize(const uint64_t w, const uint64_t h, const uint64_t d) {
 }
 
 M3i::~M3i() {
+    if ((*number_of_copies_) > 0) {
+        (*number_of_copies_)--;
+        return;
+    }
     free(data_);
+    delete number_of_copies_;
 }
 
 void M3i::ConstructFromPointer(int64_t *ptr, const uint64_t w, const uint64_t h, const uint64_t d) {
@@ -101,5 +105,21 @@ void M3i::ConstructFromPointer(int64_t *ptr, const uint64_t w, const uint64_t h,
 
 uint64_t M3i::GetSize() const {
     return width_ * height_ * depth_;
+}
+
+M3i M3i::copy() {
+    M3i tmp;
+    tmp.depth_ = depth_;
+    tmp.width_ = width_;
+    tmp.height_ = height_;
+    tmp.data_ = data_;
+    tmp.is_copy_ = true;
+    (*number_of_copies_)++;
+    tmp.number_of_copies_ = number_of_copies_;
+    return tmp;
+}
+
+M3i M3i::clone() {
+    return M3i(*this);
 }
 
