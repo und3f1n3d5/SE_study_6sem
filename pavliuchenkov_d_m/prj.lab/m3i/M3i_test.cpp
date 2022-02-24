@@ -31,3 +31,17 @@ TEST_CASE("Resize") {
     CHECK(test.GetElement(1, 1, 1) == 0);
     CHECK(test.GetElement(0, 0, 0) == 8);
 }
+
+TEST_CASE("Copy & clone") {
+    int64_t ptr1[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    int64_t ptr2[8] = {0, 1, 2, 3, 4, 5, 6, 9};
+    M3i test1(2, 2, 2, ptr1);
+    {
+        M3i test_cp = test1.copy();
+        M3i test_cn = test_cp.clone();
+        test_cp.SetElement(2, 0, 0, 0);
+        test_cn.SetElement(3, 0, 0, 0);
+        CHECK(test1.GetElement(0, 0, 0) == 2);
+    }
+    CHECK(test1.GetElement(0, 0, 0) == 2);
+}
