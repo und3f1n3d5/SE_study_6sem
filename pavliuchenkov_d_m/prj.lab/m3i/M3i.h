@@ -25,12 +25,17 @@ public:
     void Resize(const uint64_t w=1, const uint64_t h=1, const uint64_t d=1);
     uint64_t GetSize() const;
 
+    M3i copy();
+    M3i clone();
+
     ~M3i();
 
 private:
     uint64_t height_ = 1, width_ = 1, depth_ = 1;
     int64_t default_ = 0;
     int64_t* data_ = nullptr;
+    bool is_copy_ = false;
+    int64_t* number_of_copies_ = new int64_t(0);
 
     static void Check(M3i &r);
 
