@@ -39,7 +39,7 @@ M3i &M3i::operator=(const M3i &right) {
     return *this;
 }
 
-int64_t M3i::GetElement(const uint64_t x, const uint64_t y, const uint64_t z) {
+int64_t M3i::at(const uint64_t x, const uint64_t y, const uint64_t z) const {
     if (data_ == nullptr) {
         throw std::runtime_error("Data is not initialized\n");
     }
@@ -123,3 +123,70 @@ M3i M3i::clone() {
     return M3i(*this);
 }
 
+void M3i::Fill(const int64_t element) {
+    for (int i=0; i < width_; ++i) {
+        for (int j=0; j < height_; ++j) {
+            for (int k=0; k < depth_; ++k) {
+                this->SetElement(element, i, j, k);
+            }
+        }
+    }
+}
+
+void M3i::SetDefault(const int64_t element) {
+    default_ = element;
+}
+
+int64_t &M3i::at(uint64_t x, uint64_t y, uint64_t z) {
+    if (data_ == nullptr) {
+        throw std::runtime_error("Data is not initialized\n");
+    }
+    if (x < width_ && y < height_ && z < depth_) {
+        return data_[x + y * width_ + z * width_ * height_];
+    }
+    throw std::runtime_error("Error: wrong indices\n");
+}
+
+int64_t M3i::GetWidth() const {
+    return width_;
+}
+
+int64_t M3i::GetHeight() const {
+    return height_;
+}
+
+int64_t M3i::GetDepth() const {
+    return depth_;
+}
+
+std::istream& operator >> (std::istream &in, M3i &a)
+{
+    int64_t h, w, d, element;
+    in >> h >> w >> d;
+    a = M3i(h, w, d);
+    for (int i=0; i < w; ++i) {
+        for (int j=0; j < h; ++j) {
+            for (int k=0; k < d; ++k) {
+                in >> element;
+                a.SetElement(element, i, j, k);
+            }
+        }
+    }
+    return in;
+}
+
+std::ostream& operator << (std::ostream &os, const M3i &a)
+{
+    std::string res;
+    res = std::to_string(a.GetWidth()) + " " + std::to_string(a.GetHeight()) + " " + std::to_string(a.GetDepth()) + "\n";
+    for (int i=0; i < a.GetWidth(); ++i) {
+        for (int j=0; j < a.GetHeight(); ++j) {
+            for (int k=0; k < a.GetDepth(); ++k) {
+                res += std::to_string(a.at(i, j, k)) + " ";
+            }
+            res += "\n";
+        }
+        res += "\n";
+    }
+    return os << res;
+}
