@@ -148,6 +148,14 @@ int64_t M3i::GetDepth() const {
     return depth_;
 }
 
+int64_t M3i::Size(const uint64_t dim) const {
+    if (dim == 0)
+        return GetWidth();
+    else if (dim == 1)
+        return GetHeight();
+    return GetDepth();
+}
+
 std::istream& operator >> (std::istream &in, M3i &a)
 {
     int64_t h, w, d, element;
