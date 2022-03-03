@@ -2,6 +2,8 @@
 // Created by dmitrij on 2/19/22.
 //
 
+// check task
+
 #ifndef SE_STUDY_PAVLIUCHENKOV_M3I_H
 #define SE_STUDY_PAVLIUCHENKOV_M3I_H
 
@@ -29,8 +31,8 @@ public:
     void Resize(uint64_t w=1, uint64_t h=1, uint64_t d=1);
     uint64_t GetSize() const;
 
-    M3i copy();
-    M3i clone();
+    M3i copy() const;
+    M3i clone() const;
 
     void Fill(int64_t element=0);
     void SetDefault(int64_t element=0);
