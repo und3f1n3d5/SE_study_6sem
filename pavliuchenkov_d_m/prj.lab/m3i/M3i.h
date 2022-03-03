@@ -2,8 +2,6 @@
 // Created by dmitrij on 2/19/22.
 //
 
-// check task
-
 #ifndef SE_STUDY_PAVLIUCHENKOV_M3I_H
 #define SE_STUDY_PAVLIUCHENKOV_M3I_H
 
@@ -26,6 +24,7 @@ public:
     int64_t GetWidth() const;
     int64_t GetHeight() const;
     int64_t GetDepth() const;
+    int64_t Size(uint64_t dim) const;
     void SetElement(int64_t element, uint64_t x=0, uint64_t y=0, uint64_t z=0);
 
     void Resize(uint64_t w=1, uint64_t h=1, uint64_t d=1);
