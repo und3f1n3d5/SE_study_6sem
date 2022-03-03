@@ -1,3 +1,6 @@
+#ifndef SE_STUDY_PAVLIUCHENKOV_RATIONAL_H
+#define SE_STUDY_PAVLIUCHENKOV_RATIONAL_H
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -65,3 +68,8 @@ bool operator<=(const Rational &left, const Rational &right) noexcept;
 bool operator<(const Rational &left, const Rational &right) noexcept;
 bool operator>(const Rational &left, const Rational &right) noexcept;
 bool operator!=(const Rational &left, const Rational &right) noexcept;
+
+std::istream& operator >> (std::istream &in, Rational &a);
+std::ostream& operator << (std::ostream &os, const Rational &a);
+
+#endif
