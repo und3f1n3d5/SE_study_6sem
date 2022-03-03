@@ -17,25 +17,14 @@ M3i::M3i(const uint64_t w, const uint64_t h, const uint64_t d, int64_t *data)
 }
 
 M3i::M3i(const M3i &right) {
-    ConstructFromPointer(right.data_, width_, height_, depth_);
-    width_ = right.width_;
-    height_ = right.height_;
-    depth_ = right.depth_;
+    right.copy();
 }
 
 M3i &M3i::operator=(const M3i &right) {
-    if (this->data_ == right.data_) {
-        if (width_ == right.width_ && height_ == right.height_ && depth_ == right.depth_) {
-            return *this;
-        }
-        throw std::runtime_error("Error while copying: same pointers\n");
+    if (this == &right) {
+        throw std::runtime_error("Error while copying: self-assignment\n");
     }
-    ConstructFromPointer(right.data_, width_, height_, depth_);
-    width_ = right.width_;
-    height_ = right.height_;
-    depth_ = right.depth_;
-    number_of_copies_ = right.number_of_copies_;
-    is_copy_ = right.is_copy_;
+    *this = right.copy();
     return *this;
 }
 
@@ -107,7 +96,7 @@ uint64_t M3i::GetSize() const {
     return width_ * height_ * depth_;
 }
 
-M3i M3i::copy() {
+M3i M3i::copy() const {
     M3i tmp;
     tmp.depth_ = depth_;
     tmp.width_ = width_;
@@ -119,7 +108,7 @@ M3i M3i::copy() {
     return tmp;
 }
 
-M3i M3i::clone() {
+M3i M3i::clone() const{
     return M3i(*this);
 }
 
