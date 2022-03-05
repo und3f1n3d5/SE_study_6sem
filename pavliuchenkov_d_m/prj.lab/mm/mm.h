@@ -50,14 +50,20 @@ namespace lab618
             }
             else if (m_pCurrentBlk->firstFreeIndex == -1) {
                 block* tblock = m_pBlocks;
-                while (tblock != nullptr && tblock->firstFreeIndex == -1)    tblock = tblock->pnext;
-                if (tblock == nullptr)                                       tblock = newBlock();
+                while (tblock != nullptr && tblock->firstFreeIndex == -1) {
+                    tblock = tblock->pnext;
+                }
+                if (tblock == nullptr) {
+                    tblock = newBlock();
+                }
                 m_pCurrentBlk = tblock;
             }
             int ind = m_pCurrentBlk->firstFreeIndex;
             T* new_obj = reinterpret_cast<T*>(m_pCurrentBlk->pdata + ind);
             m_pCurrentBlk->firstFreeIndex = *(reinterpret_cast<int*>(m_pCurrentBlk->pdata + ind));
             ++m_pCurrentBlk->usedCount;
+
+            ::new (reinterpret_cast<void *>(new_obj)) T;
             return new_obj;
         }
 
@@ -72,9 +78,13 @@ namespace lab618
                 }
                 cur_block = cur_block->pnext;
             }
-            if (cur_block == nullptr)                                       return false;
-            if (cur_block->firstFreeIndex <= cur_ind 
-                         && cur_block->firstFreeIndex != -1)                return false;
+            if (cur_block == nullptr) {
+                return false;
+            }
+            if (cur_block->firstFreeIndex <= cur_ind
+                         && cur_block->firstFreeIndex != -1) {
+                return false;
+            }
             (cur_block->pdata + cur_ind)->~T();
             --cur_block->usedCount;
             return true;
@@ -82,11 +92,19 @@ namespace lab618
 
         // Очистка данных, зависит от m_isDeleteElementsOnDestruct
         void clear() {
-            if (m_pBlocks == nullptr)                                       return;
+            if (m_pBlocks == nullptr) {
+                return;
+            }
             block* cur_block = m_pBlocks;
-            while (cur_block->usedCount == 0 && cur_block != nullptr)       cur_block = cur_block->pnext;
-            if (cur_block != nullptr && !m_isDeleteElementsOnDestruct)      throw CException();
-            if (cur_block == nullptr)                                       return;
+            while (cur_block != nullptr && cur_block->usedCount == 0) {
+                cur_block = cur_block->pnext;
+            }
+            if (cur_block != nullptr && !m_isDeleteElementsOnDestruct) {
+                throw CException();
+            }
+            if (cur_block == nullptr) {
+                return;
+            }
             m_pBlocks = nullptr;
             bool* pmask = new bool[m_blkSize];
             m_pCurrentBlk = nullptr;
@@ -96,16 +114,19 @@ namespace lab618
                 cur_block = pnext;
             }
             delete[] pmask;
+            pmask = nullptr;
         }
 
     private:
         // Создать новый блок данных. применяется в newObject
         block* newBlock() {
-            auto* pnew_block = new block;
+            block* pnew_block = new block;
             pnew_block->pdata = reinterpret_cast<T*>(new char[sizeof(T) * m_blkSize]);
             memset(reinterpret_cast<void*>(pnew_block->pdata), 0, sizeof(T) * m_blkSize);
             T* p = pnew_block->pdata;
-            for (int i = 0; i < m_blkSize - 1; ++i, ++p)                     *(reinterpret_cast<int*>(p)) = i + 1;
+            for (int i = 0; i < m_blkSize - 1; ++i, ++p) {
+                *(reinterpret_cast<int*>(p)) = i + 1;
+            }
             *(reinterpret_cast<int*>(p)) = -1;
             pnew_block->pnext = m_pBlocks;
             pnew_block->usedCount = 0;
@@ -116,13 +137,18 @@ namespace lab618
 
         // Освободить память блока данных. Применяется в clear
         void deleteBlock(block *p, bool *pmask) {
-            if (p == nullptr)   throw CException();
+            if (p == nullptr) {
+                throw CException();
+            }
             if (!m_isDeleteElementsOnDestruct) {
                 delete[] reinterpret_cast<char*>(p->pdata);
                 delete p;
+                p = nullptr;
                 return;
             }
-            for (int i = 0; i < m_blkSize; ++i)                              pmask[i] = true;
+            for (int i = 0; i < m_blkSize; ++i) {
+                pmask[i] = true;
+            }
             int freeIndex = p->firstFreeIndex;
             T* pData = p->pdata;
             while (freeIndex != -1) {
@@ -130,10 +156,13 @@ namespace lab618
                 freeIndex = *(reinterpret_cast<int*>(pData + freeIndex));
             }
             for (int i = 0; i < m_blkSize; ++i) {
-                if (pmask[i])   (pData + i)->~T();
+                if (pmask[i]) {
+                    (pData + i)->~T();
+                }
             }
             delete[] reinterpret_cast<char*>(p->pdata);
             delete p;
+            p = nullptr;
         }
 
         // Размер блока
