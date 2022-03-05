@@ -1,4 +1,4 @@
-﻿#ifndef TEMPLATES_LIST_2022_02_03
+#ifndef TEMPLATES_LIST_2022_02_03
 #define TEMPLATES_LIST_2022_02_03
 
 // testing clear()
@@ -83,8 +83,9 @@ namespace lab618
 
             T& operator* ()
             {
-                if (m_pCurrent == nullptr)
+                if (m_pCurrent == nullptr) {
                     throw std::runtime_error("Error in getData.\nm_pCurrent is zero.\n");
+                }
                 return m_pCurrent->data;
             }
 
@@ -175,7 +176,9 @@ namespace lab618
         // изменяет состояние итератора. выставляет предыдущую позицию.
         void erase(CIterator& it)
         {
-            if (!it.isValid()) return;
+            if (!it.isValid()) {
+                return;
+            }
             leaf* p = it.getLeaf();
 
             leaf* pprev = nullptr;
@@ -186,14 +189,19 @@ namespace lab618
                 // find prev element
                 pprev = m_pBegin;
                 while (pprev != nullptr) {
-                    if (pprev->pnext == p) break;
+                    if (pprev->pnext == p) {
+                        break;
+                    }
                     pprev = pprev->pnext;
                 }
                 it.setLeaf(pprev);
             }
-            if (pprev != nullptr) pprev->pnext = p->pnext;
-            if (!p->pnext)  // in the end
+            if (pprev != nullptr) {
+                pprev->pnext = p->pnext;
+            }
+            if (!p->pnext) {  // in the end
                 m_pEnd = pprev;
+            }
             p->pnext = nullptr;
             delete p;
             p = nullptr;
@@ -202,27 +210,26 @@ namespace lab618
         int getSize()
         {
             size_t size = 0;
-            for (leaf* pCurrent = m_pBegin; pCurrent != nullptr; pCurrent = pCurrent->pnext)
+            for (leaf* pCurrent = m_pBegin; pCurrent != nullptr; pCurrent = pCurrent->pnext) {
                 ++size;
+            }
             return size;
         }
 
         void clear()
         {
-            while (m_pBegin != nullptr) {
-                #ifndef clear_without_funcs
+            leaf* tmp = m_pBegin;
+            m_pBegin = nullptr;
+            m_pEnd = nullptr;
+            while (tmp != nullptr) {
+#ifndef clear_without_funcs
                 popFront();
-                #else
-                if (m_pBegin != nullptr) {
-                    leaf* t = m_pBegin;
-                    m_pBegin = m_pBegin->pnext;
-                    t->pnext = nullptr;
-                    delete t;
-                }
-                if (m_pBegin == nullptr) {
-                    m_pEnd = nullptr;
-                }
-                #endif
+#else
+                leaf* t = tmp;
+                tmp = tmp->pnext;
+                t->pnext = nullptr;
+                delete t;
+#endif
             }
         }
 
@@ -285,49 +292,60 @@ namespace lab618
 
             void operator++()
             {
-                if (m_pBegin == nullptr) return;
+                if (m_pBegin == nullptr) {
+                    return;
+                }
                 if (m_pCurrent == nullptr) {
                     m_pCurrent = m_pBegin;
                     m_pBegin = nullptr;
                     return;
                 }
-                if (m_pCurrent->pnext == nullptr)
+                if (m_pCurrent->pnext == nullptr) {
                     m_pEnd = m_pCurrent;
+                }
                 m_pCurrent = m_pCurrent->pnext;
             }
 
             void operator--()
             {
-                if (m_pEnd == nullptr) return;
+                if (m_pEnd == nullptr) {
+                    return;
+                }
 
                 if (m_pCurrent == nullptr) {
                     m_pCurrent = m_pEnd;
                     m_pEnd = nullptr;
                     return;
                 }
-                if (m_pCurrent->pprev == nullptr)
+                if (m_pCurrent->pprev == nullptr) {
                     m_pBegin = m_pCurrent;
+                }
                 m_pCurrent = m_pCurrent->pprev;
             }
 
             T& getData()
             {
                 T tmp{};
-                if (m_pCurrent)
+                if (m_pCurrent) {
                     return m_pCurrent->data;
+                }
                 return tmp;
             }
 
             T& operator* ()
             {
                 T tmp{};
-                if (m_pCurrent != nullptr) return m_pCurrent->data;
+                if (m_pCurrent != nullptr) {
+                    return m_pCurrent->data;
+                }
                 return tmp;
             }
 
             leaf* getLeaf()
             {
-                if (m_pCurrent != nullptr) return m_pCurrent;
+                if (m_pCurrent != nullptr) {
+                    return m_pCurrent;
+                }
                 return nullptr;
             }
 
@@ -381,7 +399,7 @@ namespace lab618
 
         void pushBack(T& data)
         {
-            if (m_pBegin && m_pEnd) {
+            if (m_pBegin) {
                 m_pEnd->pnext = new leaf(data, m_pEnd, 0);
                 m_pEnd = m_pEnd->pnext;
                 return;
@@ -392,13 +410,16 @@ namespace lab618
 
         T popBack()
         {
-            if (m_pEnd == nullptr)
+            if (m_pEnd == nullptr) {
                 throw std::runtime_error("Error in popBack().\nThe list is empty.\n");
+            }
             leaf* pTmp = m_pEnd;
 
             leaf* new_end = m_pEnd->pprev;
             m_pEnd = new_end;
-            if (m_pEnd == 0) m_pBegin = 0;
+            if (m_pEnd == 0) {
+                m_pBegin = 0;
+            }
 
             T tmp = std::move(pTmp->data);
             delete pTmp;
@@ -419,13 +440,16 @@ namespace lab618
 
         T popFront()
         {
-            if (m_pBegin == nullptr)
+            if (m_pBegin == nullptr) {
                 throw std::runtime_error("Error in popFront.\nThe list is empty.\n");
+            }
             leaf* pTmp = m_pBegin;
 
             leaf* new_begin = m_pBegin->pnext;
             m_pBegin = new_begin;
-            if (m_pBegin == nullptr) m_pEnd = nullptr;
+            if (m_pBegin == nullptr) {
+                m_pEnd = nullptr;
+            }
 
             T tmp = std::move(pTmp->data);
             delete pTmp;
@@ -437,7 +461,9 @@ namespace lab618
         // изменяет состояние итератора. выставляет предыдущую позицию.
         void erase(CIterator& it)
         {
-            if (!it.isValid()) return;
+            if (!it.isValid()) {
+                return;
+            }
             leaf* p = it.getLeaf();
 
             leaf* pprev = nullptr;
@@ -446,14 +472,12 @@ namespace lab618
                 it.setLeafPreBegin(m_pBegin);
             } else {
                 // find previous element
-                pprev = m_pBegin;
-                while (pprev) {
-                    if (pprev->pnext == p) break;
-                    pprev = pprev->pnext;
-                }
+                pprev = p->pprev;
                 it.setLeaf(pprev);
             }
-            if (pprev) pprev->pnext = p->pnext;
+            if (pprev) {
+                pprev->pnext = p->pnext;
+            }
             if (!p->pnext) {  // in the end
                 m_pEnd = pprev;
             } else {
@@ -467,7 +491,9 @@ namespace lab618
         // изменяет состояние итератора. выставляет следующую позицию.
         void eraseAndNext(CIterator& it)
         {
-            if (!it.isValid()) return;
+            if (!it.isValid()) {
+                return;
+            }
             leaf* p = it.getLeaf();
 
             leaf* pnext = nullptr;
@@ -478,12 +504,16 @@ namespace lab618
                 // find next element
                 pnext = m_pEnd;
                 while (pnext) {
-                    if (pnext->pprev == p) break;
+                    if (pnext->pprev == p) {
+                        break;
+                    }
                     pnext = pnext->pprev;
                 }
                 it.setLeaf(pnext);
             }
-            if (pnext) pnext->pprev = p->pprev;
+            if (pnext) {
+                pnext->pprev = p->pprev;
+            }
             if (p->pprev == nullptr) {  // in the begin
                 m_pBegin = pnext;
             } else {
@@ -497,8 +527,9 @@ namespace lab618
         int getSize()
         {
             size_t size = 0;
-            for (leaf* pCurrent = m_pBegin; pCurrent != nullptr; pCurrent = pCurrent->pnext)
+            for (leaf* pCurrent = m_pBegin; pCurrent != nullptr; pCurrent = pCurrent->pnext) {
                 ++size;
+            }
             return size;
         }
 
