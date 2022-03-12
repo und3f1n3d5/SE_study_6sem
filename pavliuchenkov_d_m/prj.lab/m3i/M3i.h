@@ -1,74 +1,79 @@
-//
-// Created by dmitrij on 2/19/22.
-//
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <doctest/doctest.h>
+#include "m3i.h"
 
-// check task
+// enlarge
+// 0_1 vs 0_2
+TEST_CASE("Construct & copy") {
+    CHECK_NOTHROW(M3i a(2, 2, 2));
+    M3i test, b(2, 2, 2);
+    int64_t ptr[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    CHECK_NOTHROW(test = b);
+}
 
-#ifndef SE_STUDY_PAVLIUCHENKOV_M3I_H
-#define SE_STUDY_PAVLIUCHENKOV_M3I_H
+TEST_CASE("Get/Set") {
+    int64_t ptr[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    M3i test(2, 2, 2);
+    CHECK_NOTHROW(test.SetElement(10, 1, 1, 1));
+    CHECK(test.at(1, 1, 1) == 10);
+    CHECK_THROWS(test.SetElement(1, 10, 1, 0));
+    CHECK_THROWS(test.at(1, 1, 10));
+}
 
-#include <iostream>
-#include <vector>
-#include <string>
-#include <atomic>
+TEST_CASE("Resize") {
+    int64_t ptr[8] = {8, 1, 2, 3, 4, 5, 6, 7};
+    M3i test(2, 2, 2);
+    test.SetElement(8, 0, 0, 0);
+    CHECK_NOTHROW(test.Resize(1,1,1));
+    CHECK(test.GetSize() == 1);
+    CHECK_NOTHROW(test.Resize(2, 2, 2));
+    CHECK(test.at(1, 1, 1) == 0);
+    CHECK(test.at(0, 0, 0) == 8);
+}
 
-//template <typename T>
-class M3i {
-public:
-    explicit M3i(int64_t w = 1, int64_t h = 1, int64_t d = 1);
-    M3i(const M3i &right);
-    M3i(M3i &&right) noexcept;
-
-    M3i &operator=(const M3i& right);
-    M3i &operator=(M3i&& right) noexcept;
-
-    int64_t at(int64_t x = 0, int64_t y = 0, int64_t z = 0) const; // 0 <= x < width
-    int64_t& at(int64_t x = 0, int64_t y = 0, int64_t z = 0); // check indexes
-    int64_t GetWidth() const;
-    int64_t GetHeight() const;
-    int64_t GetDepth() const;
-    int64_t Size(int64_t dim) const;
-    void SetElement(int64_t element, int64_t x=0, int64_t y=0, int64_t z=0); // check indexes
-
-    void Resize(int64_t w=1, int64_t h=1, int64_t d=1); // check indexes
-    int64_t GetSize() const;
-
-    M3i copy() const; // check dependent
-    M3i clone() const; // check independent
-
-    void Fill(int64_t element=0);
-    void SetDefault(int64_t element=0);
-
-    ~M3i();
-
-private:
-
-    struct base
+TEST_CASE("Copy & clone") {
+    int64_t ptr1[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+    int64_t ptr2[8] = {0, 1, 2, 3, 4, 5, 6, 9};
+    M3i test1(2, 2, 2);
     {
-        std::mutex mutex_;
-        int64_t height_ = 0;
-        int64_t width_ = 0;
-        int64_t depth_ = 0;
-        int64_t default_ = 0;
-        int64_t* data_ = nullptr;
-        bool is_copy_ = false;
-        std::atomic<int64_t> number_of_copies_{0};
-    };
+        M3i test_cp = test1.copy();
+        M3i test_cn = test_cp.clone();
+        test_cp.SetElement(2, 0, 0, 0);
+        test_cn.SetElement(3, 0, 0, 0);
+        CHECK(test1.at(0, 0, 0) == 2);
+        test_cp.Resize(1, 1, 1);
+        CHECK_NOTHROW(test_cn.at(1, 1, 1));
+    }
+    CHECK(test1.at(0, 0, 0) == 2);
+    CHECK_THROWS(test1.at(1, 1, 1));
+}
 
-    base* ptr_ = nullptr;
+TEST_CASE("input and output") {
+    int size[3] = {3, 2, 3};
 
-    void Check();
+    M3i m1(size[0], size[1], size[2]);
 
-    void ConstructFromPointer(int64_t* ptr, int64_t w = 1, int64_t h = 1, int64_t d = 1);
-    void clear();
-};
-// todo
-// неудачно - доступ
-// творчески - как можно обеспечивать доступ потокобезопасно
+    // Filling tensor with random values
+    for (int x_id = 0; x_id < size[0]; ++x_id) {
+        for (int y_id = 0; y_id < size[1]; ++y_id) {
+            for (int z_id = 0; z_id < size[2]; ++z_id) {
+                m1.at(x_id, y_id, z_id) = rand();
+            }
+        }
+    }
 
-std::ostream& operator<<(std::ostream& os, const M3i& a);
-std::istream& operator>>(std::istream& in, M3i& a);
-// todo check program for google codestyle
-// make different repos for different courses
+    std::stringstream str;
+    M3i m2;
 
-#endif //SE_STUDY_PAVLIUCHENKOV_M3I_H
+    str << m1;
+
+    str >> m2;
+
+    for (int x_id = 0; x_id < size[0]; ++x_id) {
+        for (int y_id = 0; y_id < size[1]; ++y_id) {
+            for (int z_id = 0; z_id < size[2]; ++z_id) {
+                CHECK(m1.at(x_id, y_id, z_id) == m2.at(x_id, y_id, z_id));
+            }
+        }
+    }
+}
