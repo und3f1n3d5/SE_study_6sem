@@ -2,18 +2,21 @@
 // Created by dmitrij on 2/19/22.
 //
 
-#include "M3i.h"
+#include "m3i.h"
 
-M3i::M3i(const uint64_t w, const uint64_t h, const uint64_t d, int64_t *data)
-        : width_(w), height_(h), depth_(d) {
-    if (data == nullptr) {
-        data_ = static_cast<int64_t *>(malloc(sizeof(int64_t) * w * h * d));
-        if (data_ == nullptr) {
-            throw std::runtime_error("Error while allocating memory\n");
-        }
-        return;
+M3i::M3i(const int64_t w, const int64_t h, const int64_t d) {
+    ptr_ = new base();
+    std::lock_guard<std::mutex> guard(ptr_->mutex_);
+    if (w <= 0 || h <= 0 || d <= 0) {
+        throw std::runtime_error("Error: wrong sizes\n");
     }
-    ConstructFromPointer(data, w, h, d);
+    ptr_->width_ = w;
+    ptr_->height_ = h;
+    ptr_->depth_ = d;
+    ptr_->data_ = static_cast<int64_t *>(malloc(sizeof(int64_t) * w * h * d));
+    if (ptr_->data_ == nullptr) {
+        throw std::runtime_error("Error while allocating memory\n");
+    }
 }
 
 M3i::M3i(const M3i &right) {
@@ -24,42 +27,54 @@ M3i &M3i::operator=(const M3i &right) {
     if (this == &right) {
         throw std::runtime_error("Error while copying: self-assignment\n");
     }
-    *this = right.copy();
+    this->ptr_ = right.ptr_;
+    ptr_->number_of_copies_.fetch_add(1);
     return *this;
 }
 
-int64_t M3i::at(const uint64_t x, const uint64_t y, const uint64_t z) const {
-    if (data_ == nullptr) {
+int64_t M3i::at(const int64_t x, const int64_t y, const int64_t z) const {
+    if (x < 0 || y < 0 || z < 0) {
+        throw std::runtime_error("Error: wrong indices\n");
+    }
+    if (ptr_->data_ == nullptr) {
         throw std::runtime_error("Data is not initialized\n");
     }
-    if (x < width_ && y < height_ && z < depth_) {
-        return data_[x + y * width_ + z * width_ * height_];
+    if (x < ptr_->width_ && y < ptr_->height_ && z < ptr_->depth_) {
+        std::lock_guard<std::mutex> guard(ptr_->mutex_);
+        return ptr_->data_[x + y * ptr_->width_ + z * ptr_->width_ * ptr_->height_];
     }
     throw std::runtime_error("Error: wrong indices\n");
 }
 
-void M3i::SetElement(const int64_t element, const uint64_t x, const uint64_t y, const uint64_t z) {
-    if (data_ == nullptr) {
+void M3i::SetElement(const int64_t element, const int64_t x, const int64_t y, const int64_t z) {
+    if (ptr_->data_ == nullptr) {
         throw std::runtime_error("Data is not initialized\n");
     }
-    if (x < width_ && y < height_ && z < depth_) {
-        data_[x + y * width_ + z * width_ * height_] = element;
+    if (x < 0 || y < 0 || z < 0) {
+        throw std::runtime_error("Error: wrong indices\n");
+    }
+    if (x < ptr_->width_ && y < ptr_->height_ && z < ptr_->depth_) {
+        std::lock_guard<std::mutex> guard(ptr_->mutex_);
+        ptr_->data_[x + y * ptr_->width_ + z * ptr_->width_ * ptr_->height_] = element;
         return;
     }
     throw std::runtime_error("Error: wrong indices\n");
 }
 
-void M3i::Resize(const uint64_t w, const uint64_t h, const uint64_t d) {
-    auto old_data = data_;
-    ConstructFromPointer(old_data, width_, height_, depth_);
-    int i = width_, j = height_, k = depth_;
-    width_ = w;
-    height_ = h;
-    depth_ = d;
+void M3i::Resize(const int64_t w, const int64_t h, const int64_t d) {
+    if (w <= 0 || h <= 0 || d <= 0) {
+        throw std::runtime_error("Error: wrong sizes\n");
+    }
+    auto old_data = ptr_->data_;
+    ConstructFromPointer(old_data, ptr_->width_, ptr_->height_, ptr_->depth_);
+    int i = ptr_->width_, j = ptr_->height_, k = ptr_->depth_;
+    ptr_->width_ = w;
+    ptr_->height_ = h;
+    ptr_->depth_ = d;
     for (; i < w; ++i) {
         for (; j < h; ++j) {
             for (; k < d; ++k) {
-                SetElement(default_, i, j, k);
+                SetElement(ptr_->default_, i, j, k);
             }
         }
     }
@@ -67,55 +82,60 @@ void M3i::Resize(const uint64_t w, const uint64_t h, const uint64_t d) {
 }
 
 M3i::~M3i() {
-    if ((*number_of_copies_) > 0) {
-        (*number_of_copies_)--;
+    if (ptr_ == nullptr) return;
+    if (ptr_->number_of_copies_.load() > 0) {
+        ptr_->number_of_copies_.fetch_sub(1);
         return;
     }
-    free(data_);
-    delete number_of_copies_;
+    free(ptr_->data_);
+    delete ptr_;
 }
 
-void M3i::ConstructFromPointer(int64_t *ptr, const uint64_t w, const uint64_t h, const uint64_t d) {
-    data_ = static_cast<int64_t *>(malloc(sizeof(int64_t) * w * h * d));
-    if (data_ == nullptr) {
+void M3i::ConstructFromPointer(int64_t *ptr, const int64_t w, const int64_t h, const int64_t d) {
+    ptr_->data_ = static_cast<int64_t *>(malloc(sizeof(int64_t) * w * h * d));
+    if (ptr_->data_ == nullptr) {
         throw std::runtime_error("Error while allocating memory\n");
     }
-    width_ = w;
-    height_ = h;
-    depth_ = d;
-    for (int i=0; i < width_; ++i) {
-        for (int j=0; j < height_; ++j) {
-            for (int k=0; k < depth_; ++k) {
+    ptr_->width_ = w;
+    ptr_->height_ = h;
+    ptr_->depth_ = d;
+    for (int i=0; i < ptr_->width_; ++i) {
+        for (int j=0; j < ptr_->height_; ++j) {
+            for (int k=0; k < ptr_->depth_; ++k) {
                 this->SetElement(ptr[i * w + j * h + k * d], i, j, k);
             }
         }
     }
 }
 
-uint64_t M3i::GetSize() const {
-    return width_ * height_ * depth_;
+int64_t M3i::GetSize() const {
+    return ptr_->width_ * ptr_->height_ * ptr_->depth_;
 }
 
 M3i M3i::copy() const {
+    std::lock_guard<std::mutex> guard(ptr_->mutex_);
     M3i tmp;
-    tmp.depth_ = depth_;
-    tmp.width_ = width_;
-    tmp.height_ = height_;
-    tmp.data_ = data_;
-    tmp.is_copy_ = true;
-    (*number_of_copies_)++;
-    tmp.number_of_copies_ = number_of_copies_;
+    tmp.ptr_ = ptr_;
+    ptr_->number_of_copies_.fetch_add(1);
     return tmp;
 }
 
 M3i M3i::clone() const{
-    return M3i(*this);
+    std::lock_guard<std::mutex> guard(ptr_->mutex_);
+    M3i tmp;
+    tmp.ptr_->depth_ = ptr_->depth_;
+    tmp.ptr_->width_ = ptr_->width_;
+    tmp.ptr_->height_ = ptr_->height_;
+    tmp.ptr_->is_copy_ = false;
+    tmp.ptr_->number_of_copies_.store(ptr_->number_of_copies_);
+    tmp.ConstructFromPointer(ptr_->data_, ptr_->width_, ptr_->height_, ptr_->depth_);
+    return tmp;
 }
 
 void M3i::Fill(const int64_t element) {
-    for (int i=0; i < width_; ++i) {
-        for (int j=0; j < height_; ++j) {
-            for (int k=0; k < depth_; ++k) {
+    for (int i=0; i < ptr_->width_; ++i) {
+        for (int j=0; j < ptr_->height_; ++j) {
+            for (int k=0; k < ptr_->depth_; ++k) {
                 this->SetElement(element, i, j, k);
             }
         }
@@ -123,32 +143,35 @@ void M3i::Fill(const int64_t element) {
 }
 
 void M3i::SetDefault(const int64_t element) {
-    default_ = element;
+    ptr_->default_ = element;
 }
 
-int64_t &M3i::at(uint64_t x, uint64_t y, uint64_t z) {
-    if (data_ == nullptr) {
+int64_t &M3i::at(int64_t x, int64_t y, int64_t z) {
+    if (x < 0 || y < 0 || z < 0) {
+        throw std::runtime_error("Error: wrong indices\n");
+    }
+    if (ptr_->data_ == nullptr) {
         throw std::runtime_error("Data is not initialized\n");
     }
-    if (x < width_ && y < height_ && z < depth_) {
-        return data_[x + y * width_ + z * width_ * height_];
+    if (x < ptr_->width_ && y < ptr_->height_ && z < ptr_->depth_) {
+        return ptr_->data_[x + y * ptr_->width_ + z * ptr_->width_ * ptr_->height_];
     }
     throw std::runtime_error("Error: wrong indices\n");
 }
 
 int64_t M3i::GetWidth() const {
-    return width_;
+    return ptr_->width_;
 }
 
 int64_t M3i::GetHeight() const {
-    return height_;
+    return ptr_->height_;
 }
 
 int64_t M3i::GetDepth() const {
-    return depth_;
+    return ptr_->depth_;
 }
 
-int64_t M3i::Size(const uint64_t dim) const {
+int64_t M3i::Size(const int64_t dim) const {
     if (dim == 0)
         return GetWidth();
     else if (dim == 1)
@@ -156,11 +179,27 @@ int64_t M3i::Size(const uint64_t dim) const {
     return GetDepth();
 }
 
-std::istream& operator >> (std::istream &in, M3i &a)
+M3i::M3i(M3i &&right) noexcept {
+    ptr_ = right.ptr_;
+    right.ptr_ = nullptr;
+}
+
+M3i &M3i::operator=(M3i &&right) noexcept {
+    std::lock_guard<std::mutex> guard_1(ptr_->mutex_);
+    clear();
+    ptr_ = right.ptr_;
+    ptr_->number_of_copies_.fetch_add(1);
+    std::lock_guard<std::mutex> guard_2(ptr_->mutex_);
+    right.clear();
+    return *this;
+}
+
+
+std::istream& operator>>(std::istream &in, M3i &a)
 {
     int64_t h, w, d, element;
-    in >> h >> w >> d;
-    a = M3i(h, w, d);
+    in >> w >> h >> d;
+    a = M3i(w, h, d);
     for (int i=0; i < w; ++i) {
         for (int j=0; j < h; ++j) {
             for (int k=0; k < d; ++k) {
@@ -172,18 +211,38 @@ std::istream& operator >> (std::istream &in, M3i &a)
     return in;
 }
 
-std::ostream& operator << (std::ostream &os, const M3i &a)
+std::ostream& operator<<(std::ostream &os, const M3i &a)
 {
     std::string res;
+    res.resize(60);
     res = std::to_string(a.GetWidth()) + " " + std::to_string(a.GetHeight()) + " " + std::to_string(a.GetDepth()) + "\n";
     for (int i=0; i < a.GetWidth(); ++i) {
         for (int j=0; j < a.GetHeight(); ++j) {
             for (int k=0; k < a.GetDepth(); ++k) {
-                res += std::to_string(a.at(i, j, k)) + " ";
+                res += std::to_string(a.at(i, j, k));
+                res += " ";
             }
             res += "\n";
         }
         res += "\n";
     }
     return os << res;
+}
+
+void M3i::clear() {
+    if (ptr_ == nullptr) {
+        return;
+    }
+
+    ptr_->number_of_copies_;
+
+    if (ptr_->number_of_copies_ == 0) {
+        if (ptr_->data_ != nullptr) {
+            free(ptr_->data_);
+        }
+
+        delete ptr_;
+    }
+
+    ptr_ = nullptr;
 }
