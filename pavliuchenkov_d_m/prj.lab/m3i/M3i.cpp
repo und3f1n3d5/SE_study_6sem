@@ -2,7 +2,7 @@
 // Created by dmitrij on 2/19/22.
 //
 
-#include "M3i.h"
+#include "m3i.h"
 
 M3i::M3i(const int64_t w, const int64_t h, const int64_t d) {
     ptr_ = new base();
@@ -19,8 +19,39 @@ M3i::M3i(const int64_t w, const int64_t h, const int64_t d) {
     }
 }
 
+M3i::M3i(const init3list &list) {
+    ptr_ = new base();
+    std::lock_guard<std::mutex> guard(ptr_->mutex_);
+    ptr_->width_ = list.size();
+    ptr_->height_ = list.begin()->size();
+    ptr_->depth_ = list.begin()->begin()->size();
+    ptr_->data_ = static_cast<int64_t *>(malloc(sizeof(int64_t) * ptr_->width_ * ptr_->height_ * ptr_->depth_));
+    if (ptr_->data_ == nullptr) {
+        throw std::runtime_error("Error while allocating memory\n");
+    }
+    int x = 0;
+    int y = 0;
+    int z = 0;
+    for (const auto &sublist : list)
+    {
+        y = 0;
+        for (const auto &subsublist : sublist)
+        {
+            z = 0;
+            for (const auto &elem : subsublist)
+            {
+                ptr_->data_[x + y * ptr_->width_ + z * ptr_->width_ * ptr_->height_] = elem;
+                ++z;
+            }
+            ++y;
+        }
+        ++x;
+    }
+}
+
 M3i::M3i(const M3i &right) {
-    right.copy();
+    this->ptr_ = right.ptr_;
+    ptr_->number_of_copies_.fetch_add(1);
 }
 
 M3i &M3i::operator=(const M3i &right) {
@@ -32,7 +63,7 @@ M3i &M3i::operator=(const M3i &right) {
     return *this;
 }
 
-int64_t M3i::at(const int64_t x, const int64_t y, const int64_t z) const {
+int64_t M3i::At(int64_t x, int64_t y, int64_t z) const {
     if (x < 0 || y < 0 || z < 0) {
         throw std::runtime_error("Error: wrong indices\n");
     }
@@ -66,11 +97,27 @@ void M3i::Resize(const int64_t w, const int64_t h, const int64_t d) {
         throw std::runtime_error("Error: wrong sizes\n");
     }
     auto old_data = ptr_->data_;
-    ConstructFromPointer(old_data, ptr_->width_, ptr_->height_, ptr_->depth_);
-    int i = ptr_->width_, j = ptr_->height_, k = ptr_->depth_;
+
+    ptr_->data_ = static_cast<int64_t *>(malloc(sizeof(int64_t) * w * h * d));
+    if (ptr_->data_ == nullptr) {
+        throw std::runtime_error("Error while allocating memory\n");
+    }
+
     ptr_->width_ = w;
     ptr_->height_ = h;
     ptr_->depth_ = d;
+
+    int64_t old_w = ptr_->width_, old_h = ptr_->height_, old_d = ptr_->depth_;
+    for (int i=0; i < std::min(w, old_w); ++i) {
+        for (int j=0; j < std::min(h, old_h); ++j) {
+            for (int k=0; k < std::min(d, old_h); ++k) {
+                this->SetElement(old_data[i + j * ptr_->width_ + k * ptr_->width_ * ptr_->height_], i, j, k);
+                //a = this->At(i, j, k);
+            }
+        }
+    }
+
+    int i = ptr_->width_, j = ptr_->height_, k = ptr_->depth_;
     for (; i < w; ++i) {
         for (; j < h; ++j) {
             for (; k < d; ++k) {
@@ -146,7 +193,7 @@ void M3i::SetDefault(const int64_t element) {
     ptr_->default_ = element;
 }
 
-int64_t &M3i::at(int64_t x, int64_t y, int64_t z) {
+int64_t &M3i::At(int64_t x, int64_t y, int64_t z) {
     if (x < 0 || y < 0 || z < 0) {
         throw std::runtime_error("Error: wrong indices\n");
     }
@@ -172,6 +219,9 @@ int64_t M3i::GetDepth() const {
 }
 
 int64_t M3i::Size(const int64_t dim) const {
+    if (dim >= 3) {
+        throw std::runtime_error("Error: wrong dimension\n");
+    }
     if (dim == 0)
         return GetWidth();
     else if (dim == 1)
@@ -215,11 +265,11 @@ std::ostream& operator<<(std::ostream &os, const M3i &a)
 {
     std::string res;
     res.resize(60);
-    res = std::to_string(a.GetWidth()) + " " + std::to_string(a.GetHeight()) + " " + std::to_string(a.GetDepth()) + "\n";
+    res = "size: " + std::to_string(a.GetWidth()) + " " + std::to_string(a.GetHeight()) + " " + std::to_string(a.GetDepth()) + "\n";
     for (int i=0; i < a.GetWidth(); ++i) {
         for (int j=0; j < a.GetHeight(); ++j) {
             for (int k=0; k < a.GetDepth(); ++k) {
-                res += std::to_string(a.at(i, j, k));
+                res += std::to_string(a.At(i, j, k));
                 res += " ";
             }
             res += "\n";
