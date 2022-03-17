@@ -12,18 +12,21 @@
 #include <string>
 #include <atomic>
 
+typedef std::initializer_list<std::initializer_list<std::initializer_list<int>>> init3list;
+
 //template <typename T>
 class M3i {
 public:
     explicit M3i(int64_t w = 1, int64_t h = 1, int64_t d = 1);
     M3i(const M3i &right);
     M3i(M3i &&right) noexcept;
+    M3i(const init3list &list);
 
     M3i &operator=(const M3i& right);
     M3i &operator=(M3i&& right) noexcept;
 
-    int64_t at(int64_t x = 0, int64_t y = 0, int64_t z = 0) const; // 0 <= x < width
-    int64_t& at(int64_t x = 0, int64_t y = 0, int64_t z = 0); // check indexes
+    int64_t At(int64_t x = 0, int64_t y = 0, int64_t z = 0) const; // 0 <= x < width
+    int64_t& At(int64_t x = 0, int64_t y = 0, int64_t z = 0); // check indexes
     int64_t GetWidth() const;
     int64_t GetHeight() const;
     int64_t GetDepth() const;
