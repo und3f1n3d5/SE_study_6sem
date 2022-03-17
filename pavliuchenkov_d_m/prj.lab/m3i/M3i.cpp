@@ -2,7 +2,7 @@
 // Created by dmitrij on 2/19/22.
 //
 
-#include "m3i.h"
+#include "M3i.h"
 
 M3i::M3i(const int64_t w, const int64_t h, const int64_t d) {
     ptr_ = new base();
