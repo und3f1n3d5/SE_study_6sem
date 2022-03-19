@@ -7,22 +7,22 @@ namespace templates {
 
     void merge(void **ppArray, int left, int mid, int right, CompareSortType pCompareFunc) {
         void *result[right - left];
-        int it1 = 0, it2 = 0;
-        while (mid + it2 < right && it1 + left < mid) {
-            if (pCompareFunc(ppArray[it1 + left], ppArray[mid + it2]) <= 0) {
-                ++it2;
-                result[it1 + it2 - 1] = ppArray[mid + it2 - 1];
+        int iterator1 = 0, iterator2 = 0;
+        while (mid + iterator2 < right && iterator1 + left < mid) {
+            if (pCompareFunc(ppArray[iterator1 + left], ppArray[mid + iterator2]) <= 0) {
+                ++iterator2;
+                result[iterator1 + iterator2 - 1] = ppArray[mid + iterator2 - 1];
             }
             else {
-                ++it1;
-                result[it1 + it2 - 1] = ppArray[it1 + left - 1];
+                ++iterator1;
+                result[iterator1 + iterator2 - 1] = ppArray[iterator1 + left - 1];
             }
         }
-        for (; left + it1 < mid; ++it1) {
-            result[it1 + it2] = ppArray[left + it1];
+        for (; left + iterator1 < mid; ++iterator1) {
+            result[iterator1 + iterator2] = ppArray[left + iterator1];
         }
-        for (; mid + it2 < right; ++it2) {
-            result[it1 + it2] = ppArray[mid + it2];
+        for (; mid + iterator2 < right; ++iterator2) {
+            result[iterator1 + iterator2] = ppArray[mid + iterator2];
         }
         for (int i = 0; i < right - left; ++i) {
             ppArray[left + i] = result[i];
