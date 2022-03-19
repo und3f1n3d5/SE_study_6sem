@@ -1,4 +1,7 @@
+
+
 #include "rational.h"
+
 
 
 /*/////////////////////////////////////////////////////////////////////////////////////
@@ -132,7 +135,7 @@ std::istream& operator >> (std::istream &in, Rational &a)
 
 std::ostream& operator << (std::ostream &os, const Rational &a)
 {
-    return os << a.GetNominator() << " / " << a.GetDenominator();
+    return os << a.GetNominator() << "/" << a.GetDenominator();
     //return os << a.toString();
 }
 
