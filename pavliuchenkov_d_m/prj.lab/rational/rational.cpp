@@ -112,32 +112,19 @@ Rational operator+(const Rational &left, const Rational &r) noexcept {
 }
 
 
-std::istream& operator >> (std::istream &in, Rational &a)
-{
-    std::string s;
-    in >> s;
-    int64_t p = 0, q = 0;
-    size_t i;
-    for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i) {
-        if (0 > (int) s[i] - '0' || (int) s[i] - '0' >= 10) {
-            throw std::runtime_error("Error in input format.\n");
-        }
-        p = p*10 + (int) s[i] - '0';
+std::istream& operator>>(std::istream &in, Rational &a) {
+    int64_t nominator, denominator;
+    char c;
+    in >> nominator >> std::noskipws >> c >> denominator >> std::skipws;
+    if (in.rdstate() == std::ios_base::failbit || denominator <= 0 || c != '/') {
+        in.setstate(std::ios_base::failbit);
+        return in;
     }
-    if (s[0] == '-') p = -p;
-    if (i == s.size()) q = 1;
-    ++i;
-    int j = i;
-    for (i = i + (s[i] == '-'); i < s.size(); ++i){
-        q = q * 10 + (int) s[i] - '0';
-    }
-    if (s[j] == '-')
-        throw std::runtime_error("Error in input format.\n");
-    a = Rational(p, q);
+    a = Rational(nominator, denominator);
     return in;
 }
 
-std::ostream& operator << (std::ostream &os, const Rational &a)
+std::ostream& operator<<(std::ostream &os, const Rational &a)
 {
     return os << a.GetNominator() << "/" << a.GetDenominator();
     //return os << a.toString();
