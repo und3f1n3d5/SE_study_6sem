@@ -118,7 +118,10 @@ std::istream& operator >> (std::istream &in, Rational &a)
     in >> s;
     int64_t p = 0, q = 0;
     size_t i;
-    for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i){
+    for (i = (s[0] == '-'); i < s.size() && s[i] != '/'; ++i) {
+        if (0 > (int) s[i] - '0' || (int) s[i] - '0' >= 10) {
+            throw std::runtime_error("Error in input format.\n");
+        }
         p = p*10 + (int) s[i] - '0';
     }
     if (s[0] == '-') p = -p;
@@ -126,9 +129,10 @@ std::istream& operator >> (std::istream &in, Rational &a)
     ++i;
     int j = i;
     for (i = i + (s[i] == '-'); i < s.size(); ++i){
-        q = q*10 + (int) s[i] - '0';
+        q = q * 10 + (int) s[i] - '0';
     }
-    if (s[j] == '-')    throw std::runtime_error("Error in input format.\n");
+    if (s[j] == '-')
+        throw std::runtime_error("Error in input format.\n");
     a = Rational(p, q);
     return in;
 }
