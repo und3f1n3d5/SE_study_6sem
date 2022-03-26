@@ -1,6 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
-#include "M3i.h"
+#include "m3i.h"
 
 // enlarge
 // 0_1 vs 0_2
