@@ -57,7 +57,7 @@ TEST_CASE("input and output") {
     for (int x_id = 0; x_id < size[0]; ++x_id) {
         for (int y_id = 0; y_id < size[1]; ++y_id) {
             for (int z_id = 0; z_id < size[2]; ++z_id) {
-                m1.at(x_id, y_id, z_id) = rand();
+                m1.At(x_id, y_id, z_id) = rand();
             }
         }
     }
